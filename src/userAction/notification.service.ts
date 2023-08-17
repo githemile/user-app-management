@@ -12,10 +12,10 @@ export class NotificationService{
         private userNotificationRepository: Repository<NotifictionEntity>,
     ){}
 
-    sendNotification(message: string): void {
-        // Implémentez l'envoi de la notification ici (par exemple : console.log)
-        console.log('Notification sent:', message);
-      }
+     sendNotification(message: string): void {
+    // Implémentez l'envoi de la notification ici (par exemple : console.log)
+    console.log('Notification sent:', message);
+  }
         async createNotification(user: User , message: string) : Promise<NotifictionEntity>{
        
         try {
