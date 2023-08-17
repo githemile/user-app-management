@@ -4,8 +4,8 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './user/user.entity';
 import { UserModule } from './user/user.module';
-import { NotificationModule } from './userAction/notification.module';
-import { NotifictionEntity } from './userAction/notification.entity';
+import { NotificationModule } from './Notification/notification.module';
+import { NotifictionEntity } from './Notification/notification.entity';
 
 
 @Module({

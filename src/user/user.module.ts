@@ -3,9 +3,9 @@ import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./user.entity";
-import { NotificationModule } from "src/userAction/notification.module";
-import { NotificationService } from "src/userAction/notification.service";
-import { NotifictionEntity } from "src/userAction/notification.entity";
+import { NotificationModule } from "src/Notification/notification.module";
+import { NotificationService } from "src/Notification/notification.service";
+import { NotifictionEntity } from "src/Notification/notification.entity";
 
 
 @Module(

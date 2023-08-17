@@ -1,4 +1,4 @@
-import { NotifictionEntity } from "src/userAction/notification.entity";
+import { NotifictionEntity } from "src/Notification/notification.entity";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('user')

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post , Patch} from "@nestjs/common";
 import { UserService } from "./user.service";
 import { User } from "./user.entity";
-import { NotificationService } from "src/userAction/notification.service";
+import { NotificationService } from "src/Notification/notification.service";
 
 
 
