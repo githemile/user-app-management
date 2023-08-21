@@ -1,65 +1,45 @@
-import { Body, Controller, Delete, Get, Param, Post , Patch} from "@nestjs/common";
-import { UserService } from "./user.service";
-import { User } from "./user.entity";
-import { NotificationService } from "src/Notification/notification.service";
+import { CreateUserDto } from './create-user-dto/create-user.dto';
+import { UserEntity } from './entities/user.entity/user.entity';
+import { UpdateUserDto } from './update-user-dto/update-user.dto';
+import { UserService } from './user.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Patch,
+} from '@nestjs/common';
 
+@Controller('management')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 
+  @Post()
+  async createUser(@Body() createUserDto: CreateUserDto) {
+    return await this.userService.createUser(createUserDto);
+  }
 
-@Controller('user')
-export class UserController{
-    constructor (private readonly userService: UserService,
-        private readonly notificationService: NotificationService
-      ){
+  @Get()
+  async getAllUser() {
+    return await this.userService.getAllUsers();
+  }
+  @Get(':id')
+  async getUser(@Param('id') id: number) {
+    return await this.userService.getUser(id);
+  }
 
-    }
+  @Patch(':id')
+  async updateUser(
+    @Param('id') id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return await this.userService.updateUser(id, updateUserDto);
+  }
 
-    @Post( )
-   async create(@Body() user: User){
-  
-    
-
-   
-      const newUser = await this.userService.createNotification(user);  
-      return {message : `User ${user.firstname} added successfully` , user : newUser};
-   }
-    @Get()
-    findAll(){
-        return this.userService.findAll();
-    }
-
-    @Get(':id')
-    findOneById(@Param('id') id : number): Promise<User | undefined>{
-        return this.userService.IdFind(id);
-    }
-
-    // @Get(':firstName/:lastName')
-    // findOneByName(@Param('firstName') firstName: string, @Param('lastName') lastName: string) : Promise<User>{
-    //     return this.userService.findOneByName(firstName, lastName);
-    // }
-
-    @Patch(':id')
-    async udpate(@Param('id') id: number ,  @Body() user: User){
-        const updatedUser = await  this.userService.updatedNotification(id , user);
-       
-        return {message : `User updated by firstname = ${user.firstname}   lastname = ${user.lastname}  age = ${user.age}`, user : updatedUser};
-    }
-
-
-    @Delete(':id')
-        async   remove (@Param('id') id: number ) {  {
-         
-                        const user = await new User();
-                        
-           
-                    const userDeleted = await  this.userService.deleteNotification(id);
-                    
-                    return   {message : `User ${id} deleted success`, userDeleted : userDeleted};                                        
-          
-       
-    }
-}
-
-    
-
-
+  @Delete(':id')
+  async deleteUser(@Param('id') id: number) {
+    return await this.userService.deleteUser(id);
+  }
 }

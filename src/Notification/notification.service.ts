@@ -1,42 +1,50 @@
-import { Injectable , InternalServerErrorException } from "@nestjs/common";
-import { NotifictionEntity } from "./notification.entity";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { User } from "src/user/user.entity";
-
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
+import { NotificationEntity } from './entities/notification.entity/notification.entity';
+import { DataSource, Connection, QueryRunner } from 'typeorm';
+import { CreateUserDto } from 'src/user/create-user-dto/create-user.dto';
+import { UserEntity } from 'src/user/entities/user.entity/user.entity';
+import { NotificationDto } from './notification-dto/notification.dto';
 
 @Injectable()
-export class NotificationService{
-    constructor(
-        @InjectRepository(NotifictionEntity)
-        private userNotificationRepository: Repository<NotifictionEntity>,
-    ){}
+export class NotificationService {
+  constructor(private readonly connection: Connection) {}
 
-     sendNotification(message: string): void {
-    // Implémentez l'envoi de la notification ici (par exemple : console.log)
-    console.log('Notification sent:', message);
+  // fonction creation de la notification
+  async createNotification(
+    queryRunner: QueryRunner,
+    dtoNotification: NotificationDto,
+    user: UserEntity,
+  ) {
+    try {
+      const notification = new NotificationEntity();
+
+      notification.message = dtoNotification.message;
+      notification.user = user;
+
+      queryRunner.manager.save(notification);
+      //    return userNotification;
+    } catch (error) {
+      console.error(error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('Failed to create notification');
+      }
+    }
   }
-        async createNotification(user: User , message: string) : Promise<NotifictionEntity>{
-       
-        try {
-            const notification = new NotifictionEntity();
-            notification.action = message;
-            notification.user = user;
-            return  this.userNotificationRepository.save(notification);
-        //    return userNotification;
-        } catch (error) {
-            throw new   InternalServerErrorException('notification not created')  
-        }
-    }
 
-    async findAll() : Promise<NotifictionEntity[]>{
-        try {
-            
-             const notif = await this.userNotificationRepository.find();
-             return notif;
+  // recuperer les notifcations
+  async getNotifications() {
+    return this.connection.manager.find(NotificationEntity);
+  }
 
-        } catch (error) {
-            throw new   InternalServerErrorException('notif no creer'); 
-        }
-    }
+  // recueprer notification par id
+  async getNotification(id: number) {
+    return this.connection.manager.findOne(UserEntity, { where: { id } });
+  }
 }

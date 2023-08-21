@@ -1,193 +1,150 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository , EntityManager } from "typeorm";
-import { User } from "./user.entity";
-import { NotificationService } from "src/Notification/notification.service";
-
-
+import {
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  BadRequestException,
+} from '@nestjs/common';
+import { NotificationService } from 'src/notification/notification.service';
+import { DataSource, QueryRunner, Connection } from 'typeorm';
+import { CreateUserDto } from './create-user-dto/create-user.dto';
+import { UpdateUserDto } from './update-user-dto/update-user.dto';
+import { UserEntity } from './entities/user.entity/user.entity';
+import { NotificationDto } from 'src/notification/notification-dto/notification.dto';
+import { normalize } from 'path';
+import { InjectConnection } from '@nestjs/typeorm';
+import { NotificationEntity } from 'src/notification/entities/notification.entity/notification.entity';
 
 @Injectable()
-export class UserService{
-    constructor(
-        
-     
-        @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private notificationService : NotificationService,
-    private readonly entityManager : EntityManager,
-    @InjectRepository(User)
-    private userService: Repository<UserService>){}
+export class UserService {
+  constructor(
+    private readonly notificationService: NotificationService,
+    private readonly dataSource: DataSource,
+    @InjectConnection()
+    private readonly connection: Connection,
+  ) {}
 
-    async create(user: User ){
-        try {
-            
-            const createdUser = await this.userRepository.save(user);
-            // Enregistrer une notification automatiquement 
-            const notificationMessage  = `${user.firstname} created`;
-            this.notificationService.createNotification(createdUser, notificationMessage);
-            return createdUser;
+  // creation de l'utilisateur
 
-        } catch (error) {
-            throw new InternalServerErrorException("Could not create user");
+  async createUser(createUserDto: CreateUserDto) {
+    const queryRunner = this.connection.createQueryRunner();
 
-        }
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = new UserEntity();
+      user.firstname = createUserDto.firstname;
+      user.lastname = createUserDto.lastname;
+      user.age = createUserDto.age;
+
+      await queryRunner.manager.save(user);
+
+      // // Créer automatiquement une notification pour l'utilisateur
+      const message = `created ${user.firstname}`;
+      const notif = new NotificationDto();
+      notif.message = message;
+
+      await this.notificationService.createNotification(
+        queryRunner,
+        notif,
+        user,
+      );
+
+      await queryRunner.commitTransaction();
+      return { message: `  ${user.firstname} created` };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
+  }
 
-    
+  // mettre a jour un utilisateur
+  async updateUser(id: number, updateUserDto: UpdateUserDto) {
+    const queryRunner = this.connection.createQueryRunner();
 
-    async findAll(){
-       
-        try {
-            const users = await this.userRepository.find();
-            return users;
-        } catch (error) {
-            throw new InternalServerErrorException("Not found user");
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-        }
+    try {
+      const user = await queryRunner.manager.findOneOrFail(UserEntity, {
+        where: { id },
+      });
+
+      user.firstname = updateUserDto.firstname;
+      user.lastname = updateUserDto.lastname;
+      user.age = updateUserDto.age;
+
+      await queryRunner.manager.save(user);
+
+      //    // Enregistrez une notification
+      const message = `updated ${user.firstname}`;
+      const notif = new NotificationDto();
+      notif.message = message;
+
+      await this.notificationService.createNotification(
+        queryRunner,
+        notif,
+        user,
+      );
+
+      await queryRunner.commitTransaction();
+      return { message: ` ${user.id} => ${user.firstname} updated` };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
+  }
 
-    // async findOneById(id: number): Promise<User | undefined>{
-    //     return this.userRepository.findOneById(id);
-    // }
+  async deleteUser(id: number) {
+    const queryRunner = this.connection.createQueryRunner();
 
-    async IdFind(id: number){
-        try {
-           const myId =   await this.userRepository.findOneById(id);
-           return myId;
-       
-    } catch (error) {
-        throw new InternalServerErrorException("Not found user by id: " + id);
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
+    try {
+      const userdeleted = await queryRunner.manager.findOneOrFail(UserEntity, {
+        where: { id },
+      });
+
+      await queryRunner.manager.delete(UserEntity, id);
+
+      //    // Enregistrez une notification
+      const message = `deleted ${userdeleted.firstname}`;
+      const notif = new NotificationDto();
+      notif.message = message;
+
+      await this.notificationService.createNotification(
+        queryRunner,
+        notif,
+        userdeleted,
+      );
+
+      await queryRunner.commitTransaction();
+      return {
+        message: ` ${userdeleted.id} => ${userdeleted.firstname} deleted`,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
-    }
+  }
 
-    // async findOneBy(firstName: string, lastName: string){
-    //     return await  this.userRepository.findOneBy({firstName : firstName, lastName : lastName});
-    // }
+  async getAllUsers() {
+    const user = new UserEntity();
+    const allUsers = await this.connection.manager.find(UserEntity);
+    return { message: 'Les utilisateurs : ', user: allUsers };
+  }
 
-   
-    async  update(id:number , user: User ): Promise<User>{
-  
-        try {
-          const userId = await this.IdFind(id);
-          if(!user){
-            throw new Error('User not found');
-          }
-        //   mise a jour des champs
-        if(userId.firstname){
-            userId.firstname = user.firstname;
-        }
-        if(userId.lastname){
-            userId.lastname = user.lastname;
-        }
-        if(userId.age){
-            userId.age = user.age;
-        }
-
-        return this.userRepository.save(userId);
-
-        } catch (error) {
-            throw new InternalServerErrorException("not updated user ");
-
-        }
-    
-        
-    }
-    async updatedNotification(id: number , updateData : Partial<User>): Promise<User> {
-        try {
-        return await this.entityManager.transaction(async transactionalEntityManager => {
-            const userId = await transactionalEntityManager.findOneById(User, id);
-            
-            if (!userId) {
-              throw new NotFoundException(`L'utilisateur avec l'ID ${id} n'a pas été trouvé`);
-            }
-          
-            //   mise a jour des champs
-            await transactionalEntityManager.merge(User , userId , updateData);
-
-            // mettre a jour  user
-          const result =   await transactionalEntityManager.save(userId);
-    
-            const notificationMessage = `${userId.firstname} deleted`;
-            await this.notificationService.createNotification(userId ,notificationMessage);
-            return result;
-          });
-        } catch (error) { 
-            console.log(error);
-          throw new InternalServerErrorException('Une erreur est survenue lors de la suppression de l\'utilisateur');
-         
-
-          
-        }
-      }
-    async remove(id:number ): Promise<User>{
-       
-
-        const userId =  await this.IdFind(id);
-        if(!userId){
-            throw new Error('User not found');
-        }
-        try {
-
-            // Supprimer l'utilisateur de la base de donnée
-            return   this.userRepository.remove(userId);
-     
-       
-
-        } catch (error) {
-          throw new InternalServerErrorException('not deleted user')
-        }
-    }
-
-  
-    async deleteNotification(id: number  ): Promise<void> {
-        try {
-        return await this.entityManager.transaction(async transactionalEntityManager => {
-            const userToDelete = await transactionalEntityManager.findOneById(User, id);
-            
-            if (!userToDelete) {
-              throw new NotFoundException(`L'utilisateur avec l'ID ${id} n'a pas été trouvé`);
-            }
-          
-           
-            await transactionalEntityManager.remove(userToDelete);
-    
-            const notificationMessage = `${userToDelete.firstname} deleted`;
-            await this.notificationService.createNotification(userToDelete ,notificationMessage);
-          });
-        } catch (error) { 
-            console.log(error);
-          throw new InternalServerErrorException('Une erreur est survenue lors de la suppression de l\'utilisateur');
-         
-
-          
-        }
-      }
-    async createNotification(user:User) : Promise<User>{
-        try {
-        return await this.entityManager.transaction(async transactionalEntityManager => {
-             const createdUser = await transactionalEntityManager.save(User ,user);
-            // Enregistrer une notification automatiquement 
-            const notificationMessage  = `${user.firstname} created`;
-          await  this.notificationService.createNotification(createdUser, notificationMessage);
-           return createdUser;
-          });
-        } catch (error) { 
-            console.log(error);
-          throw new InternalServerErrorException('Une erreur est survenue lors de la suppression de l\'utilisateur');
-         
-
-          
-        }
-      }
-
-    
-    
-
-    
-    
-    
-    
-    
-
+  async getUser(id: number) {
+    const userID = await this.connection.manager.findOne(UserEntity, {
+      where: { id },
+    });
+    return { message: `Utilisateur: ${userID.id} `, user: userID };
+  }
 }

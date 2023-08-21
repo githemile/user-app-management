@@ -1,39 +1,24 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UserController } from './user/user.controller';
+import { UserService } from './user/user.service';
+import { NotificationController } from './notification/notification.controller';
+import { NotificationService } from './notification/notification.service';
+import { NotificationModule } from './notification/notification.module';
+import { typeOrmConfig } from './config/typeorm.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from './user/user.entity';
 import { UserModule } from './user/user.module';
-import { NotificationModule } from './Notification/notification.module';
-import { NotifictionEntity } from './Notification/notification.entity';
-
-
+import { UserEntity } from './user/entities/user.entity/user.entity';
 @Module({
-  imports: [
+  imports: [NotificationModule , 
     UserModule,
-    NotificationModule, 
-  //connexion a la base de donnée
-  TypeOrmModule.forRoot({
-    type: 'postgres',
-    host: 'localhost', // L'hôte de votre base de données
-    port: 5432, // Le port par défaut de PostgreSQL ou mysql
-    username: 'postgres', //
-    password: 'postgres', // Le password par défaut de PostgreSQL
-    database: 'userManagementApp', //
-    entities: [User , NotifictionEntity], // Liste des entités (tables) de votre base de données
-    synchronize: true, // Cette option crée automatiquement les tables si elles n'existent pas (attention en production)
-  }),
-
- 
-
+    TypeOrmModule.forRoot(typeOrmConfig),
   
-
-
   ],
-  controllers: [AppController],
-  providers: [AppService],
+
+  controllers: [AppController ],
+  providers: [AppService ],
   exports: [AppService],
 })
-export class AppModule {
-  
-}
+export class AppModule {}
