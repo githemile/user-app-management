@@ -37,10 +37,13 @@ export class UserService {
       user.lastname = createUserDto.lastname;
       user.age = createUserDto.age;
 
+    
+      
+
       await queryRunner.manager.save(user);
 
       // // Créer automatiquement une notification pour l'utilisateur
-      const message = `created ${user.firstname}`;
+      const message = `${user.firstname} created `;
       const notif = new NotificationDto();
       notif.message = message;
 
@@ -52,9 +55,9 @@ export class UserService {
 
       await queryRunner.commitTransaction();
       return { message: `  ${user.firstname} created` };
-    } catch (err) {
+    } catch (error) {
       await queryRunner.rollbackTransaction();
-      throw err;
+      throw error;
     } finally {
       await queryRunner.release();
     }
